@@ -3,34 +3,66 @@ from config import app, db
 from models import Contact
 
 # GET Route
-@app.route("/contacts",methods=["GET"])
+@app.route("/contacts", methods=["GET"])
 def get_contacts():
     contacts = Contact.query.all()
-    json_contacts = list(map(lambda x: x.to_json(),contacts))
-    return jsonify({"contacts": json_contacts}),200
+    json_contacts = list(map(lambda x: x.to_json(), contacts))
+    return jsonify({"contacts": json_contacts}), 200
 
 
-#Create Route
-@app.route("/create_contacts",methods=["POST"])
+# Create Route
+@app.route("/create_contacts", methods=["POST"])
 def create_contact():
-        first_name = request.json.get("firstName")
-        last_name = request.json.get("lastName")
-        email = request.json.get("email")
+    first_name = request.json.get("firstName")
+    last_name = request.json.get("lastName")
+    email = request.json.get("email")
 
-        #null check using 400(Bad request)
-        if not first_name or not last_name or not email:
-            return (
-              jsonify({message: "You must include a first name,last name and email"}),400,  
-            ) 
-        new_contact=Contact(first_name=first_name,last_name=last_name,email=email)
+    # null check using 400(Bad request)
+    if not first_name or not last_name or not email:
+        return (
+            jsonify(
+                {"message": "You must include a first name,last name and email"}), 400,
+        )
+    new_contact = Contact(first_name=first_name,
+                          last_name=last_name, email=email)
 
-        try:
-             db.session.add(new_contact)
-             db.session.commit()
-        except Exception as e:
-             return jsonify({"message":str(e)}),400
-        
-        return jsonify({"message":"User Created"}), 201
+    try:
+        db.session.add(new_contact)
+        db.session.commit()
+    except Exception as e:
+        return jsonify({"message": str(e)}), 400
+
+    return jsonify({"message": "User Created"}), 201
+
+# Update Contact
+@app.route("update_contacts/<int:user_id")
+def update_contact(user_id):
+    contact = Contact.query.get(user_id)
+
+    if not contact:
+        return jsonify({"message": "User not found"}), 404
+
+    data = request.json
+    contact.first_name = data.get("firstName", contact.first_name)
+    contact.last_name = data.get("lastName", contact.last_name)
+    contact.email = data.get("email", contact.email)
+
+    db.session.commit()
+
+    return jsonify({"message": "User not found"}), 200
+
+#delete Contact
+@app.route("/delete_contact/<int:user_id>", methos=["DELETE"])
+def delete_contact(user_id):
+    contact = Contact.query.get(user_id)
+
+    if not contact:
+        return jsonify({"message": "User not found"}), 404
+    
+    db.session.delete(contact)
+    db.session.commit()
+
+    return jsonify({"message": "User not found"}), 200
 
 # check if main.py is run, run directly from here. Does not the entire file
 if __name__ == "__main__":
